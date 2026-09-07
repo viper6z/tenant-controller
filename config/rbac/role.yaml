@@ -1,0 +1,32 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role
+rules:
+- apiGroups:
+  - platform.viper6z.dev
+  resources:
+  - tenants
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - platform.viper6z.dev
+  resources:
+  - tenants/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - platform.viper6z.dev
+  resources:
+  - tenants/status
+  verbs:
+  - get
+  - patch
+  - update
