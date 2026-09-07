@@ -8,6 +8,8 @@ Cleanup is handled with a finalizer rather than owner references, since a cluste
 
 Built with kubebuilder and controller-runtime.
 
+Status: namespace provisioning and finalizer-based cleanup are implemented. Resource quotas and network policies are defined in the spec but not yet reconciled.
+
 ## Getting Started
 
 ### Prerequisites
