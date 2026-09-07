@@ -1,8 +1,12 @@
 # tenant-controller
-// TODO(user): Add simple overview of use/purpose
+A Kubernetes operator that provisions and manages tenant namespaces from a single custom resource.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Tenant is a cluster-scoped custom resource that represents a team's slice of a shared cluster. Creating one provisions a namespace named after the resource, and deleting one tears it down again. The controller runs a standard reconcile loop: it reads the desired state from the Tenant spec, compares it against what exists in the cluster, and makes up the difference. Because reconciliation is level-triggered rather than event-driven, it converges to the same result whether it runs once or a hundred times.
+
+Cleanup is handled with a finalizer rather than owner references, since a cluster-scoped resource cannot own a namespaced one through garbage collection. The finalizer blocks deletion of the Tenant until the controller has removed the resources it created.
+
+Built with kubebuilder and controller-runtime.
 
 ## Getting Started
 
@@ -111,7 +115,7 @@ previously added to 'dist/chart/values.yaml' or 'dist/chart/manager/manager.yaml
 is manually re-applied afterwards.
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
+This is a personal learning project, so it isn't looking for contributions.
 
 **NOTE:** Run `make help` for more information on all potential `make` targets
 
