@@ -22,6 +22,7 @@ import (
 	platformv1alpha1 "github.com/viper6z/tenant-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -98,6 +99,37 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	quota := corev1.ResourceQuota{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tenant-quota",
+			Namespace: tenant.Name,
+		},
+	}
+	cpuQuantity, err := resource.ParseQuantity(tenant.Spec.Quota.CPU)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	memQuantity, err := resource.ParseQuantity(tenant.Spec.Quota.Memory)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	podQuantity, err := resource.ParseQuantity(tenant.Spec.Quota.Pods)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, &quota, func() error {
+		quota.Spec.Hard = corev1.ResourceList{
+			corev1.ResourceLimitsCPU:    cpuQuantity,
+			corev1.ResourceLimitsMemory: memQuantity,
+			corev1.ResourcePods:         podQuantity,
+		}
+		return nil
+	})
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	log := logf.FromContext(ctx)
+	log.Info("reconciled quota", "operation", result)
 	return ctrl.Result{}, nil
 }
 
