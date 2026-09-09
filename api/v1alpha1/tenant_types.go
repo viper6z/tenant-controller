@@ -31,9 +31,12 @@ type TenantSpec struct {
 	// The following markers will use OpenAPI v3 schema to validate the value
 	// More info: https://book.kubebuilder.io/reference/markers/crd-validation.html
 
-	// foo is an example field of Tenant. Edit tenant_types.go to remove/update
 	// +optional
 	Quota TenantQuota `json:"quota"`
+
+	// +kubebuilder:default=true
+	// +optional
+	NetworkIsolation bool `json:"networkIsolation,omitempty"`
 }
 
 type TenantQuota struct {

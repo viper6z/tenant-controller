@@ -10,3 +10,4 @@ spec:
     cpu: 1000m
     memory: 2000Mi
     pods: "10"
+  networkIsolation: true

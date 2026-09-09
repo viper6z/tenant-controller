@@ -21,6 +21,7 @@ import (
 
 	platformv1alpha1 "github.com/viper6z/tenant-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	networkingv1 "k8s.io/api/networking/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,7 +54,7 @@ type TenantReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.24.1/pkg/reconcile
 func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = logf.FromContext(ctx)
+	log := logf.FromContext(ctx)
 
 	// TODO(user): your logic here
 	var tenant platformv1alpha1.Tenant
@@ -86,17 +87,17 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	var namespace corev1.Namespace
+	err := r.Get(ctx, client.ObjectKey{Name: tenant.Name}, &namespace)
 
-	if err := r.Get(ctx, client.ObjectKey{Name: tenant.Name}, &namespace); err != nil {
-		if apierrors.IsNotFound(err) {
-			var ns corev1.Namespace
-			ns.Name = tenant.Name
-			if err := r.Create(ctx, &ns); err != nil {
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, nil
-		}
+	if err != nil && !apierrors.IsNotFound(err) {
 		return ctrl.Result{}, err
+	}
+	if apierrors.IsNotFound(err) {
+		var ns corev1.Namespace
+		ns.Name = tenant.Name
+		if err := r.Create(ctx, &ns); err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	quota := corev1.ResourceQuota{
@@ -128,8 +129,42 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	log := logf.FromContext(ctx)
 	log.Info("reconciled quota", "operation", result)
+
+	npolicy := networkingv1.NetworkPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tenant-policy",
+			Namespace: tenant.Name,
+		},
+	}
+
+	if tenant.Spec.NetworkIsolation {
+
+		result, err = controllerutil.CreateOrUpdate(ctx, r.Client, &npolicy, func() error {
+			npolicy.Spec.PodSelector = metav1.LabelSelector{}
+			npolicy.Spec.PolicyTypes = []networkingv1.PolicyType{networkingv1.PolicyTypeIngress}
+			npolicy.Spec.Ingress = []networkingv1.NetworkPolicyIngressRule{
+				{
+					From: []networkingv1.NetworkPolicyPeer{
+						{
+							PodSelector: &metav1.LabelSelector{},
+						},
+					},
+				},
+			}
+			return nil
+		})
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
+		log.Info("reconciled network policy", "operation", result)
+	} else {
+		if err := r.Delete(ctx, &npolicy); err != nil && !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+	}
+
 	return ctrl.Result{}, nil
 }
 

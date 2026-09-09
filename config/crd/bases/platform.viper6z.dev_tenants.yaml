@@ -39,9 +39,10 @@ spec:
           spec:
             description: spec defines the desired state of Tenant
             properties:
+              networkIsolation:
+                default: true
+                type: boolean
               quota:
-                description: foo is an example field of Tenant. Edit tenant_types.go
-                  to remove/update
                 properties:
                   cpu:
                     description: total cpu limit of the tenant
