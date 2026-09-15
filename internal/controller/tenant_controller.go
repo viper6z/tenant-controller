@@ -124,11 +124,14 @@ func (r *TenantReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if err != nil {
 		return ctrl.Result{}, err
 	}
+
 	result, err := controllerutil.CreateOrUpdate(ctx, r.Client, &quota, func() error {
 		quota.Spec.Hard = corev1.ResourceList{
-			corev1.ResourceLimitsCPU:    cpuQuantity,
-			corev1.ResourceLimitsMemory: memQuantity,
-			corev1.ResourcePods:         podQuantity,
+			corev1.ResourceLimitsCPU:      cpuQuantity,
+			corev1.ResourceLimitsMemory:   memQuantity,
+			corev1.ResourceRequestsCPU:    cpuQuantity,
+			corev1.ResourceRequestsMemory: memQuantity,
+			corev1.ResourcePods:           podQuantity,
 		}
 		return nil
 	})
